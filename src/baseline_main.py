@@ -7,6 +7,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 import torch
+torch.cuda.is_available()
 from torch.utils.data import DataLoader
 
 from utils import get_dataset
@@ -18,7 +19,8 @@ from models import MLP, CNNMnist, CNNFashion_Mnist, CNNCifar
 if __name__ == '__main__':
     args = args_parser()
     if args.gpu:
-        torch.cuda.set_device(args.gpu)
+        torch.cuda.is_available()
+        torch.cuda.set_device(0)
     device = 'cuda' if args.gpu else 'cpu'
 
     # load datasets
