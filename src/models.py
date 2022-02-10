@@ -4,7 +4,22 @@
 
 from torch import nn
 import torch.nn.functional as F
+import torch
+import torchvision.models as models
 
+class MyEnsemble(nn.Module):
+    def __init__(self):
+        super(MyEnsemble, self).__init__()
+        self.modelA = models.resnet101(pretrained=True, progress=True)
+        self.modelB = models.densenet121(pretrained=True, progress=True)
+        self.classifier = nn.Linear(2000, 4)
+
+    def forward(self, x1, x2):
+        x1 = self.modelA(x1)
+        x2 = self.modelB(x2)
+        x = torch.cat((x1, x2), dim=1)
+        x = self.classifier(x)
+        return F.log_softmax(x, dim=1)
 
 class MLP(nn.Module):
     def __init__(self, dim_in, dim_hidden, dim_out):
