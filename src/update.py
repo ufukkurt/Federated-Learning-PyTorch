@@ -97,14 +97,17 @@ class ClientUpdate(object):
 
 
 class LocalUpdate(object):
-    def __init__(self, args, dataset, idxs, logger):
+    def __init__(self, args, dataset, idxs, logger, train_loaders, val_loaders, test_loaders):
         self.args = args
         self.logger = logger
         self.trainloader, self.validloader, self.testloader = self.train_val_test(
             dataset, list(idxs))
         self.device = 'cuda' if args.gpu else 'cpu'
         # Default criterion set to NLL loss function
-        self.criterion = nn.NLLLoss().to(self.device)
+        self.criterion = nn.CrossEntropyLoss().to(self.device)
+        self.train_loaders = train_loaders
+        self.val_loaders = val_loaders
+        self.test_loaders = test_loaders
 
     def train_val_test(self, dataset, idxs):
         """
@@ -135,7 +138,7 @@ class LocalUpdate(object):
                                         momentum=0.5)
         elif self.args.optimizer == 'adam':
             optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr,
-                                         weight_decay=1e-4)
+                                         weight_decay=1e-5)
 
         for iter in range(self.args.local_ep):
             batch_loss = []

@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # load dataset and user groups
     train_dataset, test_dataset, user_groups = get_dataset(args)
 
-    train_loader, val_loader, test_loader = get_ds(args.num_users)
+    train_loaders, val_loaders, test_loaders = get_ds(args.num_users)
 
     # BUILD MODEL
     if args.model == 'cnn':
@@ -85,6 +85,8 @@ if __name__ == '__main__':
         global_model.train()
         m = max(int(args.frac * args.num_users), 1)
         idxs_users = np.random.choice(range(args.num_users), m, replace=False)
+        print("idx_users" + idxs_users)
+        print("usergropus" + user_groups)
 
         for idx in idxs_users:
             local_model = LocalUpdate(args=args, dataset=train_dataset,

@@ -52,11 +52,11 @@ def imagePaths(benignPaths, insituPaths, invasivePaths, normalPath, benignInds, 
 
 
 def get_ds(client_number):
-    data_path = '/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos'
-    benign_data_path = '/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Benign'
-    insitu_data_path = '/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/InSitu'
-    invasive_data_path = '/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Invasive'
-    normal_data_path = '/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Normal'
+    data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos'
+    benign_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Benign'
+    insitu_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/InSitu'
+    invasive_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Invasive'
+    normal_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Normal'
     image_filenames = glob.glob(join(data_path, "**/*.tif"), recursive=True)
 
     benign_image_filenames = glob.glob(join(benign_data_path, "**/*.tif"), recursive=True)
@@ -83,38 +83,84 @@ def get_ds(client_number):
                                          collate_fn=None)
     mean, std = compute_mean_std(loader)
 
-    client_set_inds = []
-
-
     train_dataset = SlideTrainingDataset(benign_trainset_inds, insitu_trainset_inds, invasive_trainset_inds,
-                                         normal_trainset_inds, benign_image_filenames, insitu_image_filenames, invasive_image_filenames,
+                                         normal_trainset_inds, benign_image_filenames, insitu_image_filenames,
+                                         invasive_image_filenames,
                                          normal_image_filenames, mean, std)
     val_dataset = SlideValidationDataset(benign_valset_inds, insitu_valset_inds, invasive_valset_inds,
-                                         normal_valset_inds, benign_image_filenames, insitu_image_filenames, invasive_image_filenames,
+                                         normal_valset_inds, benign_image_filenames, insitu_image_filenames,
+                                         invasive_image_filenames,
                                          normal_image_filenames, mean, std)
     test_dataset = TestDataset(benign_testset_inds, insitu_testset_inds, invasive_testset_inds, normal_testset_inds,
                                benign_image_filenames, insitu_image_filenames, invasive_image_filenames,
                                normal_image_filenames, mean, std)
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                               batch_size=batch_size,
-                                               num_workers=0,
-                                               shuffle=True, sampler=None,
-                                               collate_fn=None)
+    n_samples = len(train_dataset)
+    shuffled_indices = np.random.permutation(n_samples)
+    splited_train = np.split(shuffled_indices, client_number)
 
-    val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
-                                             batch_size=batch_size,
-                                             num_workers=0,
-                                             shuffle=False, sampler=None,
-                                             collate_fn=None)
+    n_samples = len(val_dataset)
+    shuffled_indices = np.random.permutation(n_samples)
+    splited_val = np.split(shuffled_indices, client_number)
 
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                              batch_size=batch_size,
-                                              num_workers=0,
-                                              shuffle=False, sampler=None,
-                                              collate_fn=None)
+    n_samples = len(test_dataset)
+    shuffled_indices = np.random.permutation(n_samples)
+    splited_test = np.split(shuffled_indices, client_number)
 
-    return train_loader, val_loader, test_loader
+    train_dataset_array = []
+    val_dataset_array = []
+    test_dataset_array = []
+    train_loader_array = []
+    val_loader_array = []
+    test_loader_array = []
+
+    for indx in splited_train:
+        dataset = torch.utils.data.Subset(train_dataset, indices=indx)
+        train_dataset_array.append(dataset)
+        train_loader_array.append(torch.utils.data.DataLoader(dataset=dataset,
+                                                              batch_size=batch_size,
+                                                              num_workers=0,
+                                                              shuffle=True, sampler=None,
+                                                              collate_fn=None))
+
+    for indx in splited_val:
+        dataset = torch.utils.data.Subset(val_dataset, indices=indx)
+        val_dataset_array.append(dataset)
+        val_loader_array.append(torch.utils.data.DataLoader(dataset=dataset,
+                                                            batch_size=batch_size,
+                                                            num_workers=0,
+                                                            shuffle=False, sampler=None,
+                                                            collate_fn=None))
+
+    for indx in splited_test:
+        dataset = torch.utils.data.Subset(test_dataset, indices=indx)
+        test_dataset_array.append(dataset)
+        test_loader_array.append(torch.utils.data.DataLoader(dataset=dataset,
+                                                             batch_size=batch_size,
+                                                             num_workers=0,
+                                                             shuffle=False, sampler=None,
+                                                             collate_fn=None))
+
+    #train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+    #                                           batch_size=batch_size,
+    #                                           num_workers=0,
+    #                                           shuffle=True, sampler=None,
+    #                                           collate_fn=None)
+
+    #val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
+    #                                         batch_size=batch_size,
+    #                                         num_workers=0,
+    #                                         shuffle=False, sampler=None,
+    #                                         collate_fn=None)
+
+    #test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+    #                                          batch_size=batch_size,
+    #                                          num_workers=0,
+    #                                          shuffle=False, sampler=None,
+    #                                          collate_fn=None)
+
+    return train_loader_array, val_loader_array, test_loader_array
+
 
 def compute_mean_std(loader):
     mean = 0.
@@ -135,8 +181,9 @@ def compute_mean_std(loader):
 class TrainingDataset(Dataset):
     def __init__(self, benign_trainset_inds, insitu_trainset_inds, invasive_trainset_inds, normal_trainset_inds,
                  benign_image_filenames, insitu_image_filenames, invasive_image_filenames, normal_image_filenames):
-        self.data_frame = pd.read_csv('/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
-                                      names=['path', 'id'], delim_whitespace=True)
+        self.data_frame = pd.read_csv(
+            '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+            names=['path', 'id'], delim_whitespace=True)
         self.benignInds = benign_trainset_inds.tolist()
         self.insituInds = insitu_trainset_inds.tolist()
         self.invasiveInds = invasive_trainset_inds.tolist()
@@ -165,10 +212,12 @@ class TrainingDataset(Dataset):
 
 
 class SlideTrainingDataset(Dataset):
-    def __init__(self, inds1, inds2, inds3, inds4, benign_image_filenames, insitu_image_filenames, invasive_image_filenames
+    def __init__(self, inds1, inds2, inds3, inds4, benign_image_filenames, insitu_image_filenames,
+                 invasive_image_filenames
                  , normal_image_filenames, mean, std):
-        self.data_frame = pd.read_csv('/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
-                                      names=['path', 'id'], delim_whitespace=True)
+        self.data_frame = pd.read_csv(
+            '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+            names=['path', 'id'], delim_whitespace=True)
         self.benignInds = inds1
         self.insituInds = inds2
         self.invasiveInds = inds3
@@ -207,10 +256,12 @@ class SlideTrainingDataset(Dataset):
 
 
 class SlideValidationDataset(Dataset):
-    def __init__(self, inds1, inds2, inds3, inds4, benign_image_filenames, insitu_image_filenames, invasive_image_filenames
+    def __init__(self, inds1, inds2, inds3, inds4, benign_image_filenames, insitu_image_filenames,
+                 invasive_image_filenames
                  , normal_image_filenames, mean, std):
-        self.data_frame = pd.read_csv('/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
-                                      names=['path', 'id'], delim_whitespace=True)
+        self.data_frame = pd.read_csv(
+            '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+            names=['path', 'id'], delim_whitespace=True)
         self.benignInds = inds1
         self.insituInds = inds2
         self.invasiveInds = inds3
@@ -249,6 +300,7 @@ class SlideValidationDataset(Dataset):
 def imagePathsTest(benignPaths, insituPaths, invasivePaths, normalPath, benignInds, insituInds, inasiveInds,
                    normalInds):
     imagePaths = []
+    data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos'
     index = benignInds.tolist() + insituInds.tolist() + inasiveInds.tolist() + normalInds.tolist()
     image_filenames = glob.glob(join(data_path, "**/*.tif"), recursive=True)
     for indx in index:
@@ -258,10 +310,12 @@ def imagePathsTest(benignPaths, insituPaths, invasivePaths, normalPath, benignIn
 
 
 class TestDataset(Dataset):
-    def __init__(self, inds1, inds2, inds3, inds4, benign_image_filenames, insitu_image_filenames, invasive_image_filenames
+    def __init__(self, inds1, inds2, inds3, inds4, benign_image_filenames, insitu_image_filenames,
+                 invasive_image_filenames
                  , normal_image_filenames, mean, std):
-        self.data_frame = pd.read_csv('/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
-                                      names=['path', 'id'], delim_whitespace=True)
+        self.data_frame = pd.read_csv(
+            '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+            names=['path', 'id'], delim_whitespace=True)
         self.benignInds = inds1
         self.insituInds = inds2
         self.invasiveInds = inds3
