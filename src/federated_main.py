@@ -14,7 +14,7 @@ import torch
 from tensorboardX import SummaryWriter
 
 from options import args_parser
-from update import LocalUpdate, test_inference
+from update import ClientUpdate, LocalUpdate, test_inference
 from models import MyEnsemble, MLP, CNNMnist, CNNFashion_Mnist, CNNCifar
 from utils import get_ds, get_dataset, average_weights, exp_details
 
@@ -29,9 +29,11 @@ if __name__ == '__main__':
     args = args_parser()
     exp_details(args)
 
-    if args.gpu:
-        torch.cuda.set_device(0)
-    device = 'cuda' if args.gpu else 'cpu'
+    #Open them for gpu setting
+    #if args.gpu:
+     #   torch.cuda.set_device(0)
+    #device = 'cuda' if args.gpu else 'cpu'
+    device = 'cpu'
 
     # load dataset and user groups
     train_dataset, test_dataset, user_groups = get_dataset(args)
@@ -85,12 +87,15 @@ if __name__ == '__main__':
         global_model.train()
         m = max(int(args.frac * args.num_users), 1)
         idxs_users = np.random.choice(range(args.num_users), m, replace=False)
-        print("idx_users" + idxs_users)
-        print("usergropus" + user_groups)
+        #print(idxs_users)
+        #print("--------------")
+        #print(user_groups)
 
         for idx in idxs_users:
-            local_model = LocalUpdate(args=args, dataset=train_dataset,
-                                      idxs=user_groups[idx], logger=logger)
+            local_model = ClientUpdate(args=args, train_loader=train_loaders, val_loader=val_loaders,
+                                       test_loader=test_loaders, logger=logger, idx=idxs_users)
+            #local_model = LocalUpdate(args=args, dataset=train_dataset,
+            #                          idxs=user_groups[idx], logger=logger)
             w, loss = local_model.update_weights(
                 model=copy.deepcopy(global_model), global_round=epoch)
             local_weights.append(copy.deepcopy(w))

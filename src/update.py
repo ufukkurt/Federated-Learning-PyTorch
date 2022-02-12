@@ -23,15 +23,17 @@ class DatasetSplit(Dataset):
 
 
 class ClientUpdate(object):
-    def __init__(self, args, train_loader, val_loader, test_loader, logger):
+    def __init__(self, args, train_loader, val_loader, test_loader, logger, idx):
         self.args = args
         self.logger = logger
         self.trainloader = train_loader
         self.validloader = val_loader
         self.testloader = test_loader
-        self.device = 'cuda' if args.gpu else 'cpu'
+        self.user_idx = idx
+        #self.device = 'cuda' if args.gpu else 'cpu'
+        self.device = 'cpu'
         # Default criterion set to NLL loss function
-        self.criterion = nn.NLLLoss().to(self.device)
+        self.criterion = nn.CrossEntropyLoss.to(self.device)
 
 
     def update_weights(self, model, global_round):
@@ -45,7 +47,7 @@ class ClientUpdate(object):
                                         momentum=0.5)
         elif self.args.optimizer == 'adam':
             optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr,
-                                         weight_decay=1e-4)
+                                         weight_decay=1e-6)
 
         for iter in range(self.args.local_ep):
             batch_loss = []

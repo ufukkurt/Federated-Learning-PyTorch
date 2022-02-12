@@ -52,11 +52,16 @@ def imagePaths(benignPaths, insituPaths, invasivePaths, normalPath, benignInds, 
 
 
 def get_ds(client_number):
-    data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos'
-    benign_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Benign'
-    insitu_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/InSitu'
-    invasive_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Invasive'
-    normal_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Normal'
+    #data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos'
+    #benign_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Benign'
+    #insitu_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/InSitu'
+    #invasive_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Invasive'
+    #normal_data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos/Normal'
+    data_path = 'D:\TUM\Tez\Federated-Learning-PyTorch\content\drive\MyDrive\ICIAR2018_BACH_Challenge\Photos'
+    benign_data_path = 'D:\TUM\Tez\Federated-Learning-PyTorch\content\drive\MyDrive\ICIAR2018_BACH_Challenge\Photos\Benign'
+    insitu_data_path = 'D:\TUM\Tez\Federated-Learning-PyTorch\content\drive\MyDrive\ICIAR2018_BACH_Challenge\Photos\InSitu'
+    invasive_data_path = 'D:\TUM\Tez\Federated-Learning-PyTorch\content\drive\MyDrive\ICIAR2018_BACH_Challenge\Photos\Invasive'
+    normal_data_path = 'D:\TUM\Tez\Federated-Learning-PyTorch\content\drive\MyDrive\ICIAR2018_BACH_Challenge\Photos\\Normal'
     image_filenames = glob.glob(join(data_path, "**/*.tif"), recursive=True)
 
     benign_image_filenames = glob.glob(join(benign_data_path, "**/*.tif"), recursive=True)
@@ -175,14 +180,20 @@ def compute_mean_std(loader):
 
     mean /= nb_samples
     std /= nb_samples
+
+    print("mean, std")
+    print(mean, std)
     return mean, std
 
 
 class TrainingDataset(Dataset):
     def __init__(self, benign_trainset_inds, insitu_trainset_inds, invasive_trainset_inds, normal_trainset_inds,
                  benign_image_filenames, insitu_image_filenames, invasive_image_filenames, normal_image_filenames):
+        #self.data_frame = pd.read_csv(
+        #    '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+        #    names=['path', 'id'], delim_whitespace=True)
         self.data_frame = pd.read_csv(
-            '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+            'D:\TUM\Tez\Federated-Learning-PyTorch\content\drive\MyDrive\ICIAR2018_BACH_Challenge\labels.txt', header=None,
             names=['path', 'id'], delim_whitespace=True)
         self.benignInds = benign_trainset_inds.tolist()
         self.insituInds = insitu_trainset_inds.tolist()
@@ -204,7 +215,7 @@ class TrainingDataset(Dataset):
     def __getitem__(self, idx):
         image = Image.open(self.imagePaths[idx])
         mainImagePath = self.imagePaths[idx][:-3] + '.tif'
-        label = self.data_frame.loc[self.data_frame['path'] == mainImagePath.rsplit('/', 1)[-1]]['id'].item()
+        label = self.data_frame.loc[self.data_frame['path'] == mainImagePath.rsplit('\\', 1)[-1]]['id'].item()
         transform = transforms.ToTensor()
         grayImage = ImageOps.grayscale(image)
 
@@ -215,8 +226,11 @@ class SlideTrainingDataset(Dataset):
     def __init__(self, inds1, inds2, inds3, inds4, benign_image_filenames, insitu_image_filenames,
                  invasive_image_filenames
                  , normal_image_filenames, mean, std):
+        #self.data_frame = pd.read_csv(
+        #    '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+        #    names=['path', 'id'], delim_whitespace=True)
         self.data_frame = pd.read_csv(
-            '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+            'D:\TUM\Tez\Federated-Learning-PyTorch\content\drive\MyDrive\ICIAR2018_BACH_Challenge\labels.txt', header=None,
             names=['path', 'id'], delim_whitespace=True)
         self.benignInds = inds1
         self.insituInds = inds2
@@ -241,7 +255,7 @@ class SlideTrainingDataset(Dataset):
     def __getitem__(self, idx):
         image = Image.open(self.imagePaths[idx])
         mainImagePath = self.imagePaths[idx][:-3] + '.tif'
-        label = self.data_frame.loc[self.data_frame['path'] == mainImagePath.rsplit('/', 1)[-1]]['id'].item()
+        label = self.data_frame.loc[self.data_frame['path'] == mainImagePath.rsplit('\\', 1)[-1]]['id'].item()
         labelArray = [0.0, 0.0, 0.0, 0.0]
         labelArray[label] = 1.0
         # resized_image = torch.nn.functional.interpolate(image, size=(512, 512), mode='bilinear')
@@ -259,8 +273,11 @@ class SlideValidationDataset(Dataset):
     def __init__(self, inds1, inds2, inds3, inds4, benign_image_filenames, insitu_image_filenames,
                  invasive_image_filenames
                  , normal_image_filenames, mean, std):
+        #self.data_frame = pd.read_csv(
+        #    '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+        #    names=['path', 'id'], delim_whitespace=True)
         self.data_frame = pd.read_csv(
-            '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+            'D:\TUM\Tez\Federated-Learning-PyTorch\content\drive\MyDrive\ICIAR2018_BACH_Challenge\labels.txt', header=None,
             names=['path', 'id'], delim_whitespace=True)
         self.benignInds = inds1
         self.insituInds = inds2
@@ -284,7 +301,7 @@ class SlideValidationDataset(Dataset):
     def __getitem__(self, idx):
         image = Image.open(self.imagePaths[idx])
         mainImagePath = self.imagePaths[idx][:-3] + '.tif'
-        label = self.data_frame.loc[self.data_frame['path'] == mainImagePath.rsplit('/', 1)[-1]]['id'].item()
+        label = self.data_frame.loc[self.data_frame['path'] == mainImagePath.rsplit('\\', 1)[-1]]['id'].item()
         labelArray = [0.0, 0.0, 0.0, 0.0]
         labelArray[label] = 1.0
         # transform_norm = transforms.ToTensor()
@@ -300,7 +317,8 @@ class SlideValidationDataset(Dataset):
 def imagePathsTest(benignPaths, insituPaths, invasivePaths, normalPath, benignInds, insituInds, inasiveInds,
                    normalInds):
     imagePaths = []
-    data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos'
+    #data_path = '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/Photos'
+    data_path = 'D:\TUM\Tez\Federated-Learning-PyTorch\content\drive\MyDrive\ICIAR2018_BACH_Challenge\Photos'
     index = benignInds.tolist() + insituInds.tolist() + inasiveInds.tolist() + normalInds.tolist()
     image_filenames = glob.glob(join(data_path, "**/*.tif"), recursive=True)
     for indx in index:
@@ -313,8 +331,11 @@ class TestDataset(Dataset):
     def __init__(self, inds1, inds2, inds3, inds4, benign_image_filenames, insitu_image_filenames,
                  invasive_image_filenames
                  , normal_image_filenames, mean, std):
+        #self.data_frame = pd.read_csv(
+        #    '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+        #    names=['path', 'id'], delim_whitespace=True)
         self.data_frame = pd.read_csv(
-            '/home/masterthesis/ufuk/content/drive/MyDrive/ICIAR2018_BACH_Challenge/labels.txt', header=None,
+            'D:\TUM\Tez\Federated-Learning-PyTorch\content\drive\MyDrive\ICIAR2018_BACH_Challenge\labels.txt', header=None,
             names=['path', 'id'], delim_whitespace=True)
         self.benignInds = inds1
         self.insituInds = inds2
@@ -342,7 +363,7 @@ class TestDataset(Dataset):
     def __getitem__(self, idx):
         image = Image.open(self.imagePaths[idx])
         mainImagePath = self.imagePaths[idx][:-3] + '.tif'
-        label = self.data_frame.loc[self.data_frame['path'] == mainImagePath.rsplit('/', 1)[-1]]['id'].item()
+        label = self.data_frame.loc[self.data_frame['path'] == mainImagePath.rsplit('\\', 1)[-1]]['id'].item()
         # resized_image = torch.nn.functional.interpolate(image, size=(512, 512), mode='bilinear')
         image_size = (512, 512)
         resized_image = image.resize(image_size)
