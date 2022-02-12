@@ -92,8 +92,8 @@ if __name__ == '__main__':
         #print(user_groups)
 
         for idx in idxs_users:
-            local_model = ClientUpdate(args=args, train_loader=train_loaders, val_loader=val_loaders,
-                                       test_loader=test_loaders, logger=logger, idx=idxs_users)
+            local_model = ClientUpdate(args=args, train_loader=train_loaders[idx], val_loader=val_loaders[idx],
+                                       test_loader=test_loaders[idx], logger=logger)
             #local_model = LocalUpdate(args=args, dataset=train_dataset,
             #                          idxs=user_groups[idx], logger=logger)
             w, loss = local_model.update_weights(

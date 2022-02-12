@@ -23,17 +23,17 @@ class DatasetSplit(Dataset):
 
 
 class ClientUpdate(object):
-    def __init__(self, args, train_loader, val_loader, test_loader, logger, idx):
+    def __init__(self, args, train_loader, val_loader, test_loader, logger):
         self.args = args
         self.logger = logger
-        self.trainloader = train_loader
-        self.validloader = val_loader
-        self.testloader = test_loader
-        self.user_idx = idx
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.test_loader = test_loader
         #self.device = 'cuda' if args.gpu else 'cpu'
         self.device = 'cpu'
         # Default criterion set to NLL loss function
-        self.criterion = nn.CrossEntropyLoss.to(self.device)
+        #self.criterion = nn.CrossEntropyLoss.to(self.device)
+        self.criterion = torch.nn.CrossEntropyLoss()
 
 
     def update_weights(self, model, global_round):
@@ -47,15 +47,15 @@ class ClientUpdate(object):
                                         momentum=0.5)
         elif self.args.optimizer == 'adam':
             optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr,
-                                         weight_decay=1e-6)
+                                         weight_decay=1e-5)
 
         for iter in range(self.args.local_ep):
             batch_loss = []
-            for batch_idx, (images, labels) in enumerate(self.trainloader):
+            for batch_idx, (images, labels) in enumerate(self.train_loader):
                 images, labels = images.to(self.device), labels.to(self.device)
 
-                model.zero_grad()
-                log_probs = model(images)
+                optimizer.zero_grad()
+                log_probs = model(images, images)
                 loss = self.criterion(log_probs, labels)
                 loss.backward()
                 optimizer.step()
@@ -63,8 +63,8 @@ class ClientUpdate(object):
                 if self.args.verbose and (batch_idx % 10 == 0):
                     print('| Global Round : {} | Local Epoch : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                         global_round, iter, batch_idx * len(images),
-                        len(self.trainloader.dataset),
-                        100. * batch_idx / len(self.trainloader), loss.item()))
+                        len(self.train_loader.dataset),
+                        100. * batch_idx / len(self.train_loader), loss.item()))
                 self.logger.add_scalar('loss', loss.item())
                 batch_loss.append(loss.item())
             epoch_loss.append(sum(batch_loss)/len(batch_loss))
@@ -78,7 +78,7 @@ class ClientUpdate(object):
         model.eval()
         loss, total, correct = 0.0, 0.0, 0.0
 
-        for batch_idx, (images, labels) in enumerate(self.testloader):
+        for batch_idx, (images, labels) in enumerate(self.test_loader):
             images, labels = images.to(self.device), labels.to(self.device)
 
             # Inference
